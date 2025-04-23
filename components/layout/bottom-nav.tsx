@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, MessageSquare, Map, Award, Wallet } from "lucide-react"
+import { Home, MessageSquare, Map, Award, Wallet, Globe } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 
@@ -21,6 +21,7 @@ export default function BottomNav({ theme }: BottomNavProps) {
     { href: "/home", icon: Home, label: "Home" },
     { href: "/local-hub", icon: Map, label: "Local Hub" },
     { href: "/community", icon: MessageSquare, label: "Community" },
+    { href: "/browser", icon: Globe, label: "Browser" },
     { href: "/rewards", icon: Award, label: "Rewards" },
     { href: "/wallet", icon: Wallet, label: "Wallet" },
   ]

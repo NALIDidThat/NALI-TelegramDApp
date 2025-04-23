@@ -26,6 +26,7 @@ import {
   BookOpen,
   Users,
   Trophy,
+  Zap,
 } from "lucide-react"
 import BottomNav from "./bottom-nav"
 import { Button } from "@/components/ui/button"
@@ -33,6 +34,20 @@ import { Button } from "@/components/ui/button"
 interface AppLayoutProps {
   children: React.ReactNode
   hideBackButton?: boolean
+}
+
+interface TelegramTheme {
+  bg_color: string
+  text_color: string
+  hint_color: string
+  button_color: string
+  button_text_color: string
+}
+
+interface MobileMenuProps {
+  telegramTheme: TelegramTheme
+  pathname: string
+  notifications: number
 }
 
 // Add this function before the AppLayout component
@@ -71,23 +86,21 @@ function getPageTitle(pathname: string): string {
 export default function AppLayout({ children, hideBackButton = false }: AppLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [notifications] = useState(3)
-  const [telegramTheme, setTelegramTheme] = useState({
+  const [notifications, setNotifications] = useState(0)
+  const [telegramTheme, setTelegramTheme] = useState<TelegramTheme>({
     bg_color: "#ffffff",
     text_color: "#000000",
     hint_color: "#999999",
     button_color: "#FF0099",
     button_text_color: "#ffffff",
   })
+  const [showBottomNav, setShowBottomNav] = useState(false)
 
-  // Initialize Telegram WebApp
+  // Initialize Telegram WebApp and check onboarding status
   useEffect(() => {
     // Check if we're in Telegram environment
     if (typeof window !== "undefined" && window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp
-
-      // Expand the WebApp to take the full screen
-      tg.expand()
 
       // Get theme colors from Telegram
       if (tg.themeParams) {
@@ -99,10 +112,11 @@ export default function AppLayout({ children, hideBackButton = false }: AppLayou
           button_text_color: "#ffffff",
         })
       }
-
-      // Set the header color to match our theme
-      tg.setHeaderColor("#FF0099")
     }
+
+    // Check if onboarding is completed
+    const onboardingCompleted = localStorage.getItem("onboardingCompleted")
+    setShowBottomNav(!!onboardingCompleted)
   }, [])
 
   const handleBack = () => {
@@ -117,59 +131,97 @@ export default function AppLayout({ children, hideBackButton = false }: AppLayou
     }
   }
 
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      // Close any open menus or dialogs
+      if (typeof window !== "undefined" && window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred("light")
+      }
+    }
+  }
+
   return (
-    <div
-      className="min-h-screen bg-gray-50"
-      style={{ backgroundColor: telegramTheme.bg_color, color: telegramTheme.text_color }}
+    <div 
+      className="min-h-screen flex flex-col" 
+      style={{ backgroundColor: telegramTheme.bg_color }}
+      onKeyDown={handleKeyDown}
+      role="application"
+      aria-label="NALI Application"
     >
-      {/* Header */}
+      {/* Mobile Header */}
       <header
-        className="bg-white border-b border-gray-200 sticky top-0 z-10"
+        className="sticky top-0 z-50 w-full border-b"
         style={{
           backgroundColor: telegramTheme.bg_color,
           borderColor: telegramTheme.hint_color + "20",
         }}
+        role="banner"
       >
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
-          <div className="flex items-center">
+        <div className="max-w-md mx-auto px-4 h-14 flex items-center justify-between">
+          {/* Left side - Back button and Logo */}
+          <div className="flex items-center gap-2">
             {!hideBackButton && pathname !== "/home" && (
-              <Button variant="ghost" size="icon" className="mr-2" onClick={handleBack} aria-label="Back to home">
-                <ChevronLeft className="h-5 w-5" style={{ color: telegramTheme.text_color }} />
-              </Button>
-            )}
-            <div className="font-bold text-xl mr-2" style={{ color: telegramTheme.text_color }}>
-              {getPageTitle(pathname)}
-            </div>
-            {pathname === "/home" && (
-              <div
-                className="text-xs px-1.5 py-0.5 bg-gray-100 rounded"
-                style={{
-                  backgroundColor: telegramTheme.hint_color + "20",
-                  color: telegramTheme.hint_color,
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleBack}
+                aria-label="Go back to previous page"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleBack()
+                  }
                 }}
               >
-                Beta
-              </div>
+                <ChevronLeft className="h-4 w-4" style={{ color: telegramTheme.text_color }} aria-hidden="true" />
+              </Button>
             )}
+            <div className="flex items-center gap-1">
+              <div 
+                className="w-6 h-6 rounded-full bg-[#FF0099] flex items-center justify-center"
+                role="img"
+                aria-label="NALI Logo"
+              >
+                <Zap className="h-3 w-3 text-white" aria-hidden="true" />
+              </div>
+              <span 
+                className="font-bold text-base" 
+                style={{ color: telegramTheme.text_color }}
+                role="heading"
+                aria-level={1}
+              >
+                NALI
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          {/* Right side - Notifications and Menu */}
+          <div className="flex items-center gap-2">
             {/* Notifications Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="relative"
+              className="h-8 w-8 relative"
               onClick={() => {
-                // Haptic feedback if in Telegram
                 if (typeof window !== "undefined" && window.Telegram && window.Telegram.WebApp) {
                   window.Telegram.WebApp.HapticFeedback.impactOccurred("light")
                 }
               }}
-              aria-label="Notifications"
+              aria-label={`Notifications ${notifications > 0 ? `(${notifications} unread)` : ''}`}
+              aria-expanded={false}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  // Handle notification click
+                }
+              }}
             >
-              <Bell className="h-5 w-5" style={{ color: telegramTheme.text_color }} />
+              <Bell className="h-4 w-4" style={{ color: telegramTheme.text_color }} aria-hidden="true" />
               {notifications > 0 && (
-                <span className="absolute top-0 right-0 bg-[#FF0099] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                <span 
+                  className="absolute -top-1 -right-1 bg-[#FF0099] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center"
+                  aria-hidden="true"
+                >
                   {notifications}
                 </span>
               )}
@@ -182,32 +234,29 @@ export default function AppLayout({ children, hideBackButton = false }: AppLayou
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto py-6 px-4 md:px-6 relative pb-20">
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(rgba(4, 173, 191, 0.1) 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        />
+      <main 
+        className="max-w-md mx-auto w-full flex-1 px-4 py-4"
+        role="main"
+        tabIndex={-1}
+      >
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <BottomNav theme={telegramTheme} />
+      {/* Bottom Navigation - Only show after onboarding */}
+      {showBottomNav && <BottomNav theme={telegramTheme} />}
     </div>
   )
 }
 
-function MobileMenu({ telegramTheme, pathname, notifications }) {
+function MobileMenu({ telegramTheme, pathname, notifications }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   // Close menu when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
@@ -217,6 +266,13 @@ function MobileMenu({ telegramTheme, pathname, notifications }) {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [])
+
+  // Handle keyboard navigation for menu
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setIsOpen(false)
+    }
+  }
 
   // Provide haptic feedback when toggling menu
   const toggleMenu = () => {
@@ -228,7 +284,7 @@ function MobileMenu({ telegramTheme, pathname, notifications }) {
     }
   }
 
-  const handleNavigation = (href) => {
+  const handleNavigation = (href: string) => {
     router.push(href)
     setIsOpen(false)
 
@@ -279,12 +335,20 @@ function MobileMenu({ telegramTheme, pathname, notifications }) {
   ]
 
   return (
-    <div className="relative" ref={menuRef}>
-      <Button variant="ghost" size="icon" onClick={toggleMenu} aria-label="Menu" aria-expanded={isOpen}>
+    <div className="relative" ref={menuRef} onKeyDown={handleKeyDown}>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={toggleMenu} 
+        aria-label="Open menu"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        className="h-8 w-8"
+      >
         {isOpen ? (
-          <X className="h-5 w-5" style={{ color: telegramTheme.text_color }} />
+          <X className="h-4 w-4" style={{ color: telegramTheme.text_color }} aria-hidden="true" />
         ) : (
-          <Menu className="h-5 w-5" style={{ color: telegramTheme.text_color }} />
+          <Menu className="h-4 w-4" style={{ color: telegramTheme.text_color }} aria-hidden="true" />
         )}
       </Button>
 
@@ -296,6 +360,9 @@ function MobileMenu({ telegramTheme, pathname, notifications }) {
             backgroundColor: telegramTheme.bg_color,
             borderColor: telegramTheme.hint_color + "20",
           }}
+          role="menu"
+          aria-orientation="vertical"
+          aria-labelledby="menu-button"
         >
           {/* User Profile */}
           <div className="px-4 py-3 border-b" style={{ borderColor: telegramTheme.hint_color + "10" }}>
