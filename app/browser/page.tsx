@@ -29,12 +29,13 @@ export default function BrowserPage() {
   useEffect(() => {
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp
+      const themeParams = tg.themeParams || {}
       setTheme({
-        bg_color: tg.bg_color || theme.bg_color,
-        text_color: tg.text_color || theme.text_color,
-        hint_color: tg.hint_color || theme.hint_color,
-        button_color: tg.button_color || theme.button_color,
-        button_text_color: tg.button_text_color || theme.button_text_color
+        bg_color: themeParams.bg_color || theme.bg_color,
+        text_color: themeParams.text_color || theme.text_color,
+        hint_color: themeParams.hint_color || theme.hint_color,
+        button_color: themeParams.button_color || theme.button_color,
+        button_text_color: themeParams.button_text_color || theme.button_text_color
       })
     }
   }, [])
