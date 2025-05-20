@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, MessageSquare, Map, Award, Wallet, Globe } from "lucide-react"
+import { Home, MessageSquare, Map, MapPin, Wallet } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 
@@ -21,8 +21,7 @@ export default function BottomNav({ theme }: BottomNavProps) {
     { href: "/home", icon: Home, label: "Home" },
     { href: "/local-hub", icon: Map, label: "Local Hub" },
     { href: "/community", icon: MessageSquare, label: "Community" },
-    { href: "/browser", icon: Globe, label: "Browser" },
-    { href: "/rewards", icon: Award, label: "Rewards" },
+    { href: "/maps", icon: MapPin, label: "Maps" },
     { href: "/wallet", icon: Wallet, label: "Wallet" },
   ]
 
@@ -40,9 +39,9 @@ export default function BottomNav({ theme }: BottomNavProps) {
             key={item.href}
             href={item.href}
             className={`flex flex-col items-center justify-center text-xs ${
-              pathname === item.href ? "text-[#FF0099]" : "text-gray-500"
+              pathname === item.href ? "text-[#f20789]" : "text-gray-500"
             }`}
-            style={{ color: pathname === item.href ? "#FF0099" : theme.hint_color }}
+            style={{ color: pathname === item.href ? "#f20789" : theme.hint_color }}
           >
             <item.icon className="h-5 w-5 mb-1" />
             <span>{item.label}</span>

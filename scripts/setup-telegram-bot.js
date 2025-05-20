@@ -8,7 +8,7 @@ const MINI_APP_URL = process.env.NEXT_PUBLIC_TELEGRAM_MINI_APP_URL;
 async function setupBot() {
   try {
     // 1. Set bot commands
-    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands`, {
+    await axios.post(`chttps://api.telegram.org/bot${BOT_TOKEN}/setMyCommands`, {
       commands: [
         { command: 'start', description: 'Start the NALI experience' },
         { command: 'help', description: 'Get help with NALI' },

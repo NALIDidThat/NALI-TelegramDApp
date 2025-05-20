@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import { supabase } from "@/lib/supabase"
 
 export default function HomePage() {
   const router = useRouter()
@@ -116,6 +117,87 @@ export default function HomePage() {
     },
   ]
 
+  const handleQuickAction = async (action: string) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      router.push('/auth/signin')
+      return
+    }
+
+    // Get user's role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single()
+
+    if (!profile?.role) {
+      router.push('/onboarding/role')
+      return
+    }
+
+    // Route based on role and action
+    switch (action) {
+      case 'experiences':
+        switch (profile.role) {
+          case 'student':
+            router.push('/experiences/student')
+            break
+          case 'teacher':
+            router.push('/experiences/teacher')
+            break
+          case 'parent':
+            router.push('/experiences/parent')
+            break
+          case 'hub_manager':
+            router.push('/experiences/hub')
+            break
+          default:
+            router.push('/experiences')
+        }
+        break
+      case 'nearby':
+        router.push('/maps')
+        break
+      case 'community':
+        switch (profile.role) {
+          case 'student':
+            router.push('/community/student')
+            break
+          case 'teacher':
+            router.push('/community/teacher')
+            break
+          case 'parent':
+            router.push('/community/parent')
+            break
+          case 'hub_manager':
+            router.push('/community/hub')
+            break
+          default:
+            router.push('/community')
+        }
+        break
+      case 'rewards':
+        switch (profile.role) {
+          case 'student':
+            router.push('/rewards/student')
+            break
+          case 'teacher':
+            router.push('/rewards/teacher')
+            break
+          case 'parent':
+            router.push('/rewards/parent')
+            break
+          case 'hub_manager':
+            router.push('/rewards/hub')
+            break
+          default:
+            router.push('/rewards')
+        }
+        break
+    }
+  }
+
   return (
     <AppLayout hideBackButton={true}>
       <div className="max-w-md mx-auto pb-20">
@@ -169,7 +251,7 @@ export default function HomePage() {
               <motion.div
                 whileTap={{ scale: 0.95 }}
                 className="flex flex-col items-center"
-                onClick={() => router.push("/experiences")}
+                onClick={() => handleQuickAction('experiences')}
               >
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center mb-1"
@@ -188,7 +270,7 @@ export default function HomePage() {
               <motion.div
                 whileTap={{ scale: 0.95 }}
                 className="flex flex-col items-center"
-                onClick={() => router.push("/maps")}
+                onClick={() => handleQuickAction('nearby')}
               >
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center mb-1"
@@ -207,7 +289,7 @@ export default function HomePage() {
               <motion.div
                 whileTap={{ scale: 0.95 }}
                 className="flex flex-col items-center"
-                onClick={() => router.push("/community")}
+                onClick={() => handleQuickAction('community')}
               >
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center mb-1"
@@ -226,7 +308,7 @@ export default function HomePage() {
               <motion.div
                 whileTap={{ scale: 0.95 }}
                 className="flex flex-col items-center"
-                onClick={() => router.push("/rewards")}
+                onClick={() => handleQuickAction('rewards')}
               >
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center mb-1"

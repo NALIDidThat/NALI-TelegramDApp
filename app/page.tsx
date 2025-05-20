@@ -18,16 +18,8 @@ export default function Home() {
       tg.setHeaderColor("#FF0099")
     }
 
-    // Check if onboarding has been completed
-    const onboardingCompleted = localStorage.getItem("onboardingCompleted")
-
-    // If onboarding has not been completed, redirect to onboarding
-    if (!onboardingCompleted) {
-      router.push("/onboarding")
-    } else {
-      // Otherwise, redirect to home
-      router.push("/home")
-    }
+    // Always redirect to onboarding first
+    router.push("/onboarding")
   }, [router])
 
   // Return null as this page will redirect

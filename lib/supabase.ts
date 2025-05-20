@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database as SchemaDatabase } from '@/types/database'
 
 // Define types for our database schema
 export type Database = {
@@ -98,21 +99,58 @@ export type Database = {
   }
 }
 
-// Initialize the Supabase client
-const supabaseUrl = 'https://osmzvphvuetchqqgfqxa.supabase.co'
-const SUPABASE_KEY = 'SUPABASE_CLIENT_API_KEY'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !SUPABASE_KEY) {
+if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient(supabaseUrl, SUPABASE_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
+export const supabase = createClient<SchemaDatabase>(supabaseUrl, supabaseAnonKey)
+
+// Helper function to get user profile by Telegram ID
+export const getProfileByTelegramId = async (telegramId: number) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', telegramId)
+    .single()
+  
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+    console.error('Error fetching profile:', error)
   }
-})
+  return data
+}
+
+// Helper function to create or update a profile with Telegram user data
+export const upsertProfile = async (telegramUser: {
+  id: number
+  first_name: string
+  last_name?: string
+  username?: string
+  photo_url?: string
+}, additionalData: any = {}) => {
+  
+  const profileData = {
+    id: telegramUser.id,
+    full_name: `${telegramUser.first_name} ${telegramUser.last_name || ''}`.trim(),
+    username: telegramUser.username,
+    photo_url: telegramUser.photo_url,
+    ...additionalData
+  }
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert(profileData)
+    .select()
+    
+  if (error) {
+    console.error('Error upserting profile:', error)
+    throw error
+  }
+  
+  return data
+}
 
 // Helper functions for common operations
 export const getUserByTelegramId = async (telegramId: string) => {
@@ -144,7 +182,7 @@ export const createUser = async (telegramId: string, username?: string) => {
 }
 
 export const updateOnboardingProgress = async (
-  userId: string,
+  userId: string | number,
   currentStep: 'welcome' | 'intro' | 'journeys' | 'control' | 'name_registry' | 'create' | 'completed',
   isCompleted: boolean = false
 ) => {
@@ -163,7 +201,7 @@ export const updateOnboardingProgress = async (
   return data
 }
 
-export const getUserPreferences = async (userId: string) => {
+export const getUserPreferences = async (userId: string | number) => {
   const { data, error } = await supabase
     .from('user_preferences')
     .select('*')
@@ -175,7 +213,7 @@ export const getUserPreferences = async (userId: string) => {
 }
 
 export const updateUserPreferences = async (
-  userId: string,
+  userId: string | number,
   preferences: {
     theme_preference?: 'light' | 'dark' | 'system'
     notifications_enabled?: boolean

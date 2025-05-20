@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import NavigationMenu from "@/components/navigation/menu"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -15,30 +14,26 @@ interface TelegramTheme {
   button_text_color: string
 }
 
-// Add Telegram WebApp interface
 interface TelegramWebApp {
+  initData: string
+  initDataUnsafe: any
+  version: string
+  platform: string
+  themeParams: TelegramTheme | null
   expand: () => void
-  themeParams: {
-    bg_color?: string
-    text_color?: string
-    hint_color?: string
-    button_color?: string
-    button_text_color?: string
-  }
   setHeaderColor: (color: string) => void
   enableClosingConfirmation: () => void
-  onEvent: (eventType: string, eventHandler: () => void) => void
+  onEvent: (eventName: string, callback: () => void) => void
   HapticFeedback: {
     impactOccurred: (style: string) => void
-    notificationOccurred: (type: string) => void
   }
 }
 
-// Add Telegram WebApp to Window interface
+// Extend the Window interface
 declare global {
   interface Window {
     Telegram?: {
-      WebApp: TelegramWebApp
+      WebApp: any
     }
   }
 }
@@ -59,7 +54,14 @@ export default function RootLayout({
   useEffect(() => {
     // Initialize Telegram WebApp
     if (typeof window !== "undefined" && window.Telegram && window.Telegram.WebApp) {
-      const tg = window.Telegram.WebApp
+      const tg = window.Telegram.WebApp as TelegramWebApp
+      console.log('Telegram WebApp initialized:', {
+        initData: tg.initData,
+        initDataUnsafe: tg.initDataUnsafe,
+        version: tg.version,
+        platform: tg.platform,
+        themeParams: tg.themeParams
+      })
 
       // Expand the WebApp to take the full screen
       tg.expand()
@@ -83,6 +85,7 @@ export default function RootLayout({
 
       // Add event listener for theme changes
       tg.onEvent('themeChanged', () => {
+        console.log('Theme changed:', tg.themeParams)
         if (tg.themeParams) {
           setTelegramTheme({
             bg_color: tg.themeParams.bg_color || "#ffffff",
@@ -93,34 +96,30 @@ export default function RootLayout({
           })
         }
       })
+    } else {
+      console.log('Telegram WebApp not detected, running in standalone mode')
     }
   }, [])
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="theme-color" content="#FF0099" />
+      </head>
       <body 
         className={inter.className}
         style={{
           backgroundColor: telegramTheme.bg_color,
-          color: telegramTheme.text_color,
+          color: telegramTheme.text_color
         }}
+        suppressHydrationWarning
       >
-        <div className="min-h-screen bg-background">
-          {/* Navigation Header */}
-          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-14 items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {/* Add your logo or app name here */}
-              </div>
-              <NavigationMenu />
-            </div>
-          </header>
-
-          {/* Main Content */}
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
+        <main className="max-w-md mx-auto min-h-screen overflow-x-hidden">
+          {children}
+        </main>
       </body>
     </html>
   )
